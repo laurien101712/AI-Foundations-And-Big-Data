@@ -12,13 +12,18 @@
   <style>
     /* ---------- CSS: how things LOOK ---------- */
 
-    /* Style the whole page: black background, green "old monitor" text,
+    /* A CSS "variable" holding the main neon colour. Everything that says
+       var(--neon) uses this value, so JavaScript can change ONE thing
+       and the whole theme updates at once. */
+    :root { --neon: #ff4fd8; }
+
+    /* Style the whole page: dark purple background, neon text,
        a monospace font, and centre everything vertically and horizontally. */
     body {
       margin: 0;                      /* remove the browser's default gap */
       min-height: 100vh;              /* fill the full height of the window */
-      background: #0b0f0b;            /* near-black background */
-      color: #39ff14;                 /* bright retro green */
+      background: #12051f;            /* very dark purple background */
+      color: var(--neon);                 /* bright neon pink */
       font-family: "Courier New", monospace;
       display: flex;                  /* flexbox lets us centre easily */
       flex-direction: column;         /* stack items top to bottom */
@@ -30,7 +35,7 @@
     h1 {
       margin: 0 0 10px;
       letter-spacing: 4px;
-      text-shadow: 0 0 8px #39ff14;
+      text-shadow: 0 0 8px var(--neon);
     }
 
     /* The score line above the board. */
@@ -41,9 +46,9 @@
 
     /* The canvas is the "screen" we draw the game on. */
     canvas {
-      border: 4px solid #39ff14;      /* green frame around the board */
-      box-shadow: 0 0 20px #39ff14;   /* glow around the frame */
-      background: #000;               /* pure black play area */
+      border: 4px solid var(--neon);      /* pink frame around the board */
+      box-shadow: 0 0 20px #b84dff;   /* purple glow around the frame */
+      background: #0a0014;            /* near-black purple play area */
       max-width: 95vw;                /* never wider than the screen on phones */
       image-rendering: pixelated;     /* keep edges crisp and blocky */
     }
@@ -66,12 +71,26 @@
     #pad button {
       height: 50px;
       background: #000;
-      color: #39ff14;
-      border: 2px solid #39ff14;
+      color: var(--neon);
+      border: 2px solid var(--neon);
       font-size: 20px;
       font-family: inherit;   /* use the same monospace font as the page */
     }
-    #pad button:active { background: #123312; } /* flash when pressed */
+    #pad button:active { background: #3a1050; } /* purple flash when pressed */
+
+    /* The cheer message that appears when the snake eats.
+       It starts invisible (opacity 0). "transition" makes any change to
+       opacity fade smoothly over 0.4 seconds instead of snapping. */
+    #cheer {
+      height: 26px;                   /* fixed height so the page doesn't jump */
+      margin-bottom: 6px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #d9a3ff;                 /* soft lavender */
+      text-shadow: 0 0 8px #b84dff;   /* purple glow */
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
   </style>
 </head>
 <body>
@@ -81,6 +100,9 @@
 
   <!-- Score display. The <span> ids let JavaScript update the numbers. -->
   <div id="scoreboard">SCORE: <span id="score">0</span> &nbsp; HIGH: <span id="high">0</span></div>
+
+  <!-- Empty box where cheer messages appear. JavaScript fills it in. -->
+  <div id="cheer"></div>
 
   <!-- 400x400 pixel drawing surface for the game. -->
   <canvas id="game" width="400" height="400"></canvas>
@@ -105,6 +127,42 @@
     // Grab the score <span>s so we can change their text later.
     const scoreEl = document.getElementById("score");
     const highEl = document.getElementById("high");
+
+    // Grab the cheer box, and list the messages it can show.
+    const cheerEl = document.getElementById("cheer");
+    const cheers = [
+      "Nice one!", "Yum!", "You're on fire!", "Great move!",
+      "Keep going!", "Snake legend!", "Smooth!", "Brilliant!",
+      "Unstoppable!", "Looking good!"
+    ];
+    let cheerTimer = null; // remembers the pending "fade out" so we can cancel it
+
+    // Neon colours the theme cycles through each time the snake eats.
+    // (The canvas can't read CSS variables, so we also keep the
+    // current colour in a JavaScript variable called "neon".)
+    const neonColours = ["#ff4fd8", "#c86bff", "#ff6fa8", "#9d7bff", "#ff8cf0", "#e040fb"];
+    let neonIndex = 0;                 // which colour in the list we're on
+    let neon = neonColours[0];         // the current colour itself
+
+    // Move to the next colour in the list and apply it everywhere.
+    function nextColour() {
+      // % (remainder) wraps back to 0 after the last colour.
+      neonIndex = (neonIndex + 1) % neonColours.length;
+      neon = neonColours[neonIndex];
+      // Update the CSS variable, which recolours the page, border and buttons.
+      document.documentElement.style.setProperty("--neon", neon);
+    }
+
+    // Show a random cheer, then fade it out after 1 second.
+    function cheer() {
+      // Pick a random position in the list (0 to length-1).
+      const pick = cheers[Math.floor(Math.random() * cheers.length)];
+      cheerEl.textContent = pick;
+      cheerEl.style.opacity = 1;          // fade in (thanks to the CSS transition)
+      clearTimeout(cheerTimer);           // cancel an earlier fade-out if still waiting
+      // setTimeout runs the code once, after 1000 milliseconds.
+      cheerTimer = setTimeout(() => { cheerEl.style.opacity = 0; }, 1000);
+    }
 
     // The board is a grid. Each cell is 20x20 pixels,
     // so a 400px canvas holds 400 / 20 = 20 cells across and down.
@@ -135,7 +193,7 @@
       dir = { x: 1, y: 0 };      // moving right: x goes up by 1 each step
       nextDir = dir;
       score = 0;
-      speed = 140;               // start fairly slow
+      speed = 180;               // start slow (was 140; higher = slower)
       scoreEl.textContent = score;
       placeFood();
     }
@@ -176,11 +234,14 @@
 
       if (head.x === food.x && head.y === food.y) {
         // Ate the food: score up, keep the tail (so the snake grows),
-        // spawn new food, and speed up a little (but never below 60ms).
+        // spawn new food, and speed up a little (but never below 90ms,
+        // so it never gets as frantic as before).
         score += 10;
         scoreEl.textContent = score;
+        cheer();                 // show an encouraging message
+        nextColour();            // switch the theme to the next neon colour
         placeFood();
-        speed = Math.max(60, speed - 4);
+        speed = Math.max(90, speed - 3); // was max(60, speed - 4)
         restartTimer(); // apply the new speed
       } else {
         // Didn't eat: remove the last tail piece so length stays the same.
@@ -194,11 +255,11 @@
     // Draw the current frame onto the canvas.
     function draw() {
       // Wipe the board black.
-      ctx.fillStyle = "#000";
+      ctx.fillStyle = "#0a0014";          // dark purple
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw faint grid lines for a retro look.
-      ctx.strokeStyle = "#0f1f0f";
+      // Draw faint purple grid lines for a retro look.
+      ctx.strokeStyle = "#24103a";
       for (let i = 0; i <= CELLS; i++) {
         ctx.beginPath();
         ctx.moveTo(i * CELL, 0);            // vertical line
@@ -208,14 +269,14 @@
         ctx.stroke();
       }
 
-      // Draw the food as a red square. Grid position × CELL = pixel position.
+      // Draw the food as a purple square. Grid position × CELL = pixel position.
       // The +2 / -4 leaves a small gap so squares look like separate blocks.
-      ctx.fillStyle = "#ff3131";
+      ctx.fillStyle = "#b84dff";
       ctx.fillRect(food.x * CELL + 2, food.y * CELL + 2, CELL - 4, CELL - 4);
 
       // Draw each snake part. forEach gives us each part and its index (i).
       snake.forEach((part, i) => {
-        ctx.fillStyle = i === 0 ? "#b6ff9e" : "#39ff14"; // head is lighter
+        ctx.fillStyle = i === 0 ? "#ffffff" : neon; // white head, body in the current neon colour
         ctx.fillRect(part.x * CELL + 1, part.y * CELL + 1, CELL - 2, CELL - 2);
       });
 
@@ -227,9 +288,9 @@
 
     // Helper to write a big line and a small line in the centre of the board.
     function message(big, small) {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.7)";   // semi-transparent dark box
+      ctx.fillStyle = "rgba(18, 5, 31, 0.8)"; // semi-transparent dark purple box
       ctx.fillRect(0, 150, canvas.width, 100);
-      ctx.fillStyle = "#39ff14";
+      ctx.fillStyle = neon;                   // text in the current neon colour
       ctx.textAlign = "center";               // centre text on its x position
       ctx.font = "bold 32px 'Courier New', monospace";
       ctx.fillText(big, canvas.width / 2, 195);
