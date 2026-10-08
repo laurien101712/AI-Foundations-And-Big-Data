@@ -148,9 +148,14 @@
     const insults = [
       ["YOU RUINED IT", "FOR EVERYONE"],
       ["WHY DO YOU EVEN", "OWN A COMPUTER??"],
-      ["YOU LOOK LIKE YOU", "NEED A SNICKERS"]
+      ["YOU LOOK LIKE YOU", "NEED A SNICKERS"],
+      ["MY GRANNY PLAYS", "BETTER THAN YOU"],
+      ["EVEN THE SNAKE", "IS EMBARRASSED"],
+      ["HAVE YOU TRIED", "USING YOUR EYES?"],
+      ["THAT WAS PAINFUL", "TO WATCH"],
+      ["MAYBE TRY", "KNITTING?"]
     ];
-    let insult = insults[0]; // the message picked for the current game over
+    let insult = null; // the message picked for the current game over (none yet)
 
     // Neon colours the theme cycles through each time the snake eats.
     // (The canvas can't read CSS variables, so we also keep the
@@ -346,7 +351,12 @@
       state = "over";
       // Pick a random rejection message once, here, so it stays the same
       // if the screen is redrawn while you're looking at it.
-      insult = insults[Math.floor(Math.random() * insults.length)];
+      // The do...while loop keeps picking again if it lands on the same
+      // message as last time, so you never see one twice in a row.
+      const last = insult;
+      do {
+        insult = insults[Math.floor(Math.random() * insults.length)];
+      } while (insult === last);
       if (score > high) {
         high = score;
         highEl.textContent = high;
