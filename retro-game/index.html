@@ -1,1 +1,325 @@
+<!DOCTYPE html>
+<!-- Tells the browser this is a modern HTML5 page. -->
+<html lang="en">
+<head>
+  <!-- Use UTF-8 so all characters display correctly. -->
+  <meta charset="UTF-8">
+  <!-- Makes the page scale properly on phones. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Text shown on the browser tab. -->
+  <title>Retro Snake</title>
 
+  <style>
+    /* ---------- CSS: how things LOOK ---------- */
+
+    /* Style the whole page: black background, green "old monitor" text,
+       a monospace font, and centre everything vertically and horizontally. */
+    body {
+      margin: 0;                      /* remove the browser's default gap */
+      min-height: 100vh;              /* fill the full height of the window */
+      background: #0b0f0b;            /* near-black background */
+      color: #39ff14;                 /* bright retro green */
+      font-family: "Courier New", monospace;
+      display: flex;                  /* flexbox lets us centre easily */
+      flex-direction: column;         /* stack items top to bottom */
+      align-items: center;            /* centre horizontally */
+      justify-content: center;        /* centre vertically */
+    }
+
+    /* The game title. text-shadow gives it a glowing CRT look. */
+    h1 {
+      margin: 0 0 10px;
+      letter-spacing: 4px;
+      text-shadow: 0 0 8px #39ff14;
+    }
+
+    /* The score line above the board. */
+    #scoreboard {
+      margin-bottom: 8px;
+      font-size: 18px;
+    }
+
+    /* The canvas is the "screen" we draw the game on. */
+    canvas {
+      border: 4px solid #39ff14;      /* green frame around the board */
+      box-shadow: 0 0 20px #39ff14;   /* glow around the frame */
+      background: #000;               /* pure black play area */
+      max-width: 95vw;                /* never wider than the screen on phones */
+      image-rendering: pixelated;     /* keep edges crisp and blocky */
+    }
+
+    /* Small instructions text under the board. */
+    #help {
+      margin-top: 10px;
+      font-size: 14px;
+      opacity: 0.8;
+      text-align: center;
+    }
+
+    /* On-screen arrow buttons for phones/tablets (no keyboard). */
+    #pad {
+      margin-top: 10px;
+      display: grid;                            /* lay buttons out in a grid */
+      grid-template-columns: repeat(3, 60px);   /* 3 columns, 60px each */
+      gap: 6px;
+    }
+    #pad button {
+      height: 50px;
+      background: #000;
+      color: #39ff14;
+      border: 2px solid #39ff14;
+      font-size: 20px;
+      font-family: inherit;   /* use the same monospace font as the page */
+    }
+    #pad button:active { background: #123312; } /* flash when pressed */
+  </style>
+</head>
+<body>
+  <!-- ---------- HTML: what's ON the page ---------- -->
+
+  <h1>RETRO SNAKE</h1>
+
+  <!-- Score display. The <span> ids let JavaScript update the numbers. -->
+  <div id="scoreboard">SCORE: <span id="score">0</span> &nbsp; HIGH: <span id="high">0</span></div>
+
+  <!-- 400x400 pixel drawing surface for the game. -->
+  <canvas id="game" width="400" height="400"></canvas>
+
+  <div id="help">Arrow keys / WASD to move &nbsp;·&nbsp; SPACE to start or pause</div>
+
+  <!-- Touch controls. Empty <span>s fill the gaps in the 3x3 grid.
+       data-dir stores which direction each button means. -->
+  <div id="pad">
+    <span></span><button data-dir="up">▲</button><span></span>
+    <button data-dir="left">◀</button><button data-dir="start">●</button><button data-dir="right">▶</button>
+    <span></span><button data-dir="down">▼</button><span></span>
+  </div>
+
+  <script>
+    // ---------- JavaScript: how things BEHAVE ----------
+
+    // Grab the canvas element and its 2D "pen" (context) we draw with.
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    // Grab the score <span>s so we can change their text later.
+    const scoreEl = document.getElementById("score");
+    const highEl = document.getElementById("high");
+
+    // The board is a grid. Each cell is 20x20 pixels,
+    // so a 400px canvas holds 400 / 20 = 20 cells across and down.
+    const CELL = 20;
+    const CELLS = canvas.width / CELL;
+
+    // Game "state" — variables that change while playing.
+    // "let" (not "const") because their values get reassigned.
+    let snake;        // list of {x, y} grid positions; snake[0] is the head
+    let dir;          // current direction the snake is moving, e.g. {x:1, y:0} = right
+    let nextDir;      // direction the player asked for; applied on the next step
+    let food;         // {x, y} position of the food
+    let score;        // points this round
+    let speed;        // milliseconds between moves (smaller = faster)
+    let timer = null; // holds the repeating game loop so we can stop it
+    let state = "ready"; // "ready", "playing", "paused" or "over"
+
+    // Load the high score saved in the browser. try/catch stops the game
+    // breaking if the browser blocks storage (e.g. private browsing).
+    let high = 0;
+    try { high = Number(localStorage.getItem("snakeHigh")) || 0; } catch (e) {}
+    highEl.textContent = high;
+
+    // Set everything back to the starting position for a new round.
+    function reset() {
+      // Snake starts 3 cells long in the middle, facing right.
+      snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+      dir = { x: 1, y: 0 };      // moving right: x goes up by 1 each step
+      nextDir = dir;
+      score = 0;
+      speed = 140;               // start fairly slow
+      scoreEl.textContent = score;
+      placeFood();
+    }
+
+    // Put food on a random empty cell.
+    function placeFood() {
+      // "do...while" keeps picking until we find a cell the snake isn't on.
+      do {
+        // Math.random() gives 0–0.999; multiply by CELLS and round down
+        // to get a whole number from 0 to 19.
+        food = {
+          x: Math.floor(Math.random() * CELLS),
+          y: Math.floor(Math.random() * CELLS)
+        };
+      } while (snake.some(part => part.x === food.x && part.y === food.y));
+      // .some() returns true if ANY snake part matches the food position.
+    }
+
+    // One "tick" of the game: move the snake, check what it hit, redraw.
+    function step() {
+      dir = nextDir; // apply the player's latest turn
+
+      // Work out where the head goes next by adding the direction to it.
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+      // Hit a wall? (off the left/top edge is < 0, off right/bottom is >= CELLS)
+      const hitWall = head.x < 0 || head.y < 0 || head.x >= CELLS || head.y >= CELLS;
+      // Hit itself? Check if the new head lands on any body part.
+      const hitSelf = snake.some(part => part.x === head.x && part.y === head.y);
+
+      if (hitWall || hitSelf) {
+        gameOver();
+        return; // stop here; don't move or draw a new frame
+      }
+
+      // Add the new head to the front of the snake.
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        // Ate the food: score up, keep the tail (so the snake grows),
+        // spawn new food, and speed up a little (but never below 60ms).
+        score += 10;
+        scoreEl.textContent = score;
+        placeFood();
+        speed = Math.max(60, speed - 4);
+        restartTimer(); // apply the new speed
+      } else {
+        // Didn't eat: remove the last tail piece so length stays the same.
+        // Adding a head + removing a tail = moving forward one cell.
+        snake.pop();
+      }
+
+      draw();
+    }
+
+    // Draw the current frame onto the canvas.
+    function draw() {
+      // Wipe the board black.
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw faint grid lines for a retro look.
+      ctx.strokeStyle = "#0f1f0f";
+      for (let i = 0; i <= CELLS; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * CELL, 0);            // vertical line
+        ctx.lineTo(i * CELL, canvas.height);
+        ctx.moveTo(0, i * CELL);            // horizontal line
+        ctx.lineTo(canvas.width, i * CELL);
+        ctx.stroke();
+      }
+
+      // Draw the food as a red square. Grid position × CELL = pixel position.
+      // The +2 / -4 leaves a small gap so squares look like separate blocks.
+      ctx.fillStyle = "#ff3131";
+      ctx.fillRect(food.x * CELL + 2, food.y * CELL + 2, CELL - 4, CELL - 4);
+
+      // Draw each snake part. forEach gives us each part and its index (i).
+      snake.forEach((part, i) => {
+        ctx.fillStyle = i === 0 ? "#b6ff9e" : "#39ff14"; // head is lighter
+        ctx.fillRect(part.x * CELL + 1, part.y * CELL + 1, CELL - 2, CELL - 2);
+      });
+
+      // Show a message over the board when not actively playing.
+      if (state === "ready") message("PRESS SPACE", "to start");
+      if (state === "paused") message("PAUSED", "space to resume");
+      if (state === "over") message("GAME OVER", "space to play again");
+    }
+
+    // Helper to write a big line and a small line in the centre of the board.
+    function message(big, small) {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.7)";   // semi-transparent dark box
+      ctx.fillRect(0, 150, canvas.width, 100);
+      ctx.fillStyle = "#39ff14";
+      ctx.textAlign = "center";               // centre text on its x position
+      ctx.font = "bold 32px 'Courier New', monospace";
+      ctx.fillText(big, canvas.width / 2, 195);
+      ctx.font = "16px 'Courier New', monospace";
+      ctx.fillText(small, canvas.width / 2, 225);
+    }
+
+    // Stop any running loop and start a new one at the current speed.
+    // setInterval runs step() again and again every "speed" milliseconds.
+    function restartTimer() {
+      clearInterval(timer);
+      timer = setInterval(step, speed);
+    }
+
+    // End the round, save a new high score if beaten, show the message.
+    function gameOver() {
+      clearInterval(timer);
+      state = "over";
+      if (score > high) {
+        high = score;
+        highEl.textContent = high;
+        try { localStorage.setItem("snakeHigh", high); } catch (e) {}
+      }
+      draw();
+    }
+
+    // SPACE (or the ● button) does different things depending on state.
+    function startOrPause() {
+      if (state === "ready" || state === "over") {
+        reset();
+        state = "playing";
+        restartTimer();
+      } else if (state === "playing") {
+        state = "paused";
+        clearInterval(timer);   // freeze the loop
+        draw();
+      } else if (state === "paused") {
+        state = "playing";
+        restartTimer();         // unfreeze
+      }
+    }
+
+    // Change direction, but block reversing straight into yourself
+    // (e.g. moving right then pressing left would be instant death).
+    function turn(name) {
+      // A lookup table: name -> direction as x/y change.
+      const dirs = {
+        up: { x: 0, y: -1 },     // y gets smaller going up the screen
+        down: { x: 0, y: 1 },
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 }
+      };
+      const d = dirs[name];
+      if (!d) return;
+      // If the new direction is the exact opposite of the current one,
+      // adding them gives 0 on both axes — so we ignore that turn.
+      if (d.x + dir.x === 0 && d.y + dir.y === 0) return;
+      nextDir = d;
+    }
+
+    // Listen for key presses anywhere on the page.
+    document.addEventListener("keydown", e => {
+      // Map each key to an action name.
+      const keys = {
+        ArrowUp: "up", w: "up", W: "up",
+        ArrowDown: "down", s: "down", S: "down",
+        ArrowLeft: "left", a: "left", A: "left",
+        ArrowRight: "right", d: "right", D: "right"
+      };
+      if (e.key === " ") {
+        e.preventDefault();      // stop space from scrolling the page
+        startOrPause();
+      } else if (keys[e.key]) {
+        e.preventDefault();      // stop arrow keys from scrolling the page
+        if (state === "playing") turn(keys[e.key]);
+      }
+    });
+
+    // Hook up the on-screen buttons. Each reads its data-dir value.
+    document.querySelectorAll("#pad button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const d = btn.dataset.dir;   // reads the data-dir="..." attribute
+        if (d === "start") startOrPause();
+        else if (state === "playing") turn(d);
+      });
+    });
+
+    // Set up the first round and draw the "PRESS SPACE" screen.
+    reset();
+    draw();
+  </script>
+</body>
+</html>
