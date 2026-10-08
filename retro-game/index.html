@@ -283,7 +283,28 @@
       // Show a message over the board when not actively playing.
       if (state === "ready") message("PRESS SPACE", "to start");
       if (state === "paused") message("PAUSED", "space to resume");
-      if (state === "over") message("GAME OVER", "space to play again");
+      if (state === "over") gameOverMessage();
+    }
+
+    // Special game-over screen: a big two-line message in bright yellow,
+    // which stands out sharply against the pink and purple theme.
+    function gameOverMessage() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.85)";  // darker box so the yellow pops
+      ctx.fillRect(0, 120, canvas.width, 160); // taller box to fit two big lines
+      ctx.textAlign = "center";
+      ctx.font = "bold 36px 'Courier New', monospace";
+      // The full sentence is too wide for one line on a 400px board,
+      // so it's split across two lines.
+      ctx.fillStyle = "#ffe600";               // bright contrasting yellow
+      ctx.shadowColor = "#ffe600";             // glow in the same colour
+      ctx.shadowBlur = 12;
+      ctx.fillText("YOU RUINED IT", canvas.width / 2, 180);
+      ctx.fillText("FOR EVERYONE", canvas.width / 2, 222);
+      ctx.shadowBlur = 0;                      // turn the glow off so nothing else glows
+      // Smaller restart hint underneath, in the theme colour.
+      ctx.fillStyle = neon;
+      ctx.font = "16px 'Courier New', monospace";
+      ctx.fillText("space to play again", canvas.width / 2, 258);
     }
 
     // Helper to write a big line and a small line in the centre of the board.
