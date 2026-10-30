@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en-IE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Earn & Learn — Pocket money they earn, lessons they keep</title>
+<meta name="description" content="A kids' card and app for ages 6–17 with chores, savings goals and parent controls. Free for every child on your account.">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Earn & Learn — Pocket money they earn, lessons they keep">
+<meta property="og:description" content="Chores-linked pocket money, age-matched money lessons and a bank they grow into. Ages 6–17.">
+<!-- <meta property="og:image" content="https://YOUR-DOMAIN/og-image.png"> 1200x630 -->
+<meta property="og:locale" content="en_IE">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Earn & Learn — Pocket money they earn, lessons they keep">
+<meta name="twitter:description" content="Chores-linked pocket money, age-matched money lessons and a bank they grow into. Ages 6–17.">
+<!-- <meta name="twitter:image" content="https://YOUR-DOMAIN/og-image.png"> -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐷</text></svg>">
+<script>
+  (function(){try{if(localStorage.getItem('el-theme')==='light'){document.documentElement.classList.add('light');}}catch(e){}})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#020a18;
+  --bg-grad:linear-gradient(170deg,#020a18,#041028 40%,#06142e 70%,#020a18);
+  --surface:rgba(8,24,56,0.85);
+  --border:rgba(0,170,255,0.12);
+  --text:#d0e0f0;--text-bright:#e8f0ff;--text-dim:#6888aa;
+  --neon:#00aaff;--cyan:#00e5ff;--green:#00ff88;--amber:#ffaa00;
+  --grid:rgba(0,170,255,0.03);
+  --header:rgba(2,10,24,0.6);
+  --orb1:rgba(0,170,255,0.35);--orb2:rgba(0,255,136,0.22);
+  --ring-track:rgba(0,170,255,0.15);
+  --shadow:0 10px 40px rgba(0,0,0,0.35);
+}
+html.light{
+  --bg:#f3f7fc;
+  --bg-grad:linear-gradient(170deg,#f6f9fd,#eaf2fb 40%,#e3eef9 70%,#f6f9fd);
+  --surface:rgba(255,255,255,0.88);
+  --border:rgba(0,90,160,0.14);
+  --text:#24384f;--text-bright:#0a1a2e;--text-dim:#5a7290;
+  --neon:#0077cc;--cyan:#008fa8;--green:#00995a;--amber:#c27a00;
+  --grid:rgba(0,90,160,0.04);
+  --header:rgba(246,249,253,0.7);
+  --orb1:rgba(0,140,255,0.18);--orb2:rgba(0,200,120,0.14);
+  --ring-track:rgba(0,90,160,0.12);
+  --shadow:0 10px 30px rgba(10,40,80,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  font-size:16px;line-height:1.65;color:var(--text);
+  background:var(--bg);background-image:var(--bg-grad);background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  min-height:100vh;overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+.orb{position:fixed;width:380px;height:380px;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0}
+.orb.o1{background:var(--orb1);top:12vh;left:calc(50% - 440px - 440px);animation:orbit 26s linear infinite}
+.orb.o2{background:var(--orb2);top:55vh;right:calc(50% - 440px - 440px);animation:orbit 32s linear infinite reverse}
+@keyframes orbit{
+  from{transform:rotate(0deg) translateX(60px) rotate(0deg)}
+  to{transform:rotate(360deg) translateX(60px) rotate(-360deg)}
+}
+header{
+  position:sticky;top:0;z-index:50;
+  background:var(--header);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+.bar{display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{font-weight:800;color:var(--text-bright);text-decoration:none;letter-spacing:-0.02em;font-size:1.05rem}
+.brand span{margin-right:6px}
+.nav{display:flex;align-items:center;gap:14px}
+.nav a{color:var(--text-dim);text-decoration:none;font-size:.9rem;font-weight:500}
+.nav a:hover{color:var(--neon)}
+.toggle{
+  width:38px;height:38px;border-radius:10px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text-bright);cursor:pointer;font-size:1rem;
+}
+.toggle:focus-visible,.btn:focus-visible,.opt:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+main{position:relative;z-index:1}
+section{padding:72px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+h1,h2,h3{color:var(--text-bright);font-weight:800;letter-spacing:-0.03em;line-height:1.15}
+h1{font-size:clamp(2.2rem,6vw,3.4rem)}
+h2{font-size:clamp(1.6rem,4vw,2.1rem);margin-bottom:28px}
+h3{font-size:1.1rem;letter-spacing:-0.01em;margin-bottom:6px}
+.eyebrow{font-size:.78rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--neon);margin-bottom:12px}
+.lead{font-size:1.12rem;color:var(--text);margin:18px 0 30px;max-width:560px}
+.btn{
+  display:inline-block;padding:14px 26px;border-radius:12px;font-weight:700;font-size:1rem;
+  background:var(--neon);color:#021022;text-decoration:none;border:none;cursor:pointer;
+  box-shadow:0 0 0 1px rgba(0,229,255,.25),0 8px 30px rgba(0,170,255,.25);transition:transform .15s,box-shadow .15s;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(0,229,255,.4),0 12px 34px rgba(0,170,255,.35)}
+html.light .btn{color:#fff}
+.btn.ghost{background:transparent;color:var(--text-bright);box-shadow:none;border:1px solid var(--border)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:var(--shadow)}
+/* Hero */
+.hero{display:grid;grid-template-columns:1.4fr 1fr;gap:40px;align-items:center;padding-top:84px}
+.hero-ring{display:flex;flex-direction:column;align-items:center;gap:10px}
+.jar{position:relative;width:200px;height:200px}
+.jar svg{transform:rotate(-90deg)}
+.jar .track{stroke:var(--ring-track)}
+.jar .fill{stroke:var(--green);stroke-linecap:round;transition:stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1)}
+.jar .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.jar .amt{font-size:2rem;font-weight:800;color:var(--green);letter-spacing:-0.03em}
+.jar .of{font-size:.82rem;color:var(--text-dim)}
+.jar-label{font-size:.9rem;color:var(--text-dim)}
+.jar-label b{color:var(--text-bright)}
+.tagline{margin-top:14px;font-size:.9rem;color:var(--text-dim)}
+/* Reasons */
+.reasons{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.reasons .num{font-size:.8rem;font-weight:700;color:var(--neon);margin-bottom:10px}
+.reasons p{font-size:.95rem}
+/* Week */
+.week{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;position:relative}
+.day{position:relative}
+.day .d{display:inline-block;font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;margin-bottom:12px}
+.d.chore{background:rgba(255,170,0,.12);color:var(--amber)}
+.d.money{background:rgba(0,255,136,.12);color:var(--green)}
+.d.learn{background:rgba(0,170,255,.12);color:var(--neon)}
+.day p{font-size:.93rem}
+.mini{display:flex;align-items:center;gap:10px;margin-top:12px}
+.mini svg{transform:rotate(-90deg)}
+.mini span{font-size:.82rem;color:var(--green);font-weight:700}
+/* Proof */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.stat .n{font-size:2.6rem;font-weight:800;letter-spacing:-0.04em;line-height:1}
+.stat .n.g{color:var(--green)}.stat .n.a{color:var(--amber)}
+.stat p{margin-top:8px;font-size:.95rem}
+.quotes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+blockquote{font-size:1.02rem;color:var(--text-bright);font-style:italic}
+blockquote::before{content:"“";display:block;font-size:2.4rem;line-height:.6;color:var(--neon);font-style:normal;margin-bottom:8px}
+cite{display:block;margin-top:12px;font-style:normal;font-size:.82rem;color:var(--text-dim)}
+cite a,.src a,footer a{color:var(--text-dim)}
+cite a:hover,.src a:hover,footer a:hover{color:var(--neon)}
+.src{font-size:.8rem;color:var(--text-dim);margin-top:14px}
+/* FAQ */
+details{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden}
+summary{cursor:pointer;list-style:none;padding:18px 22px;font-weight:600;color:var(--text-bright);display:flex;justify-content:space-between;gap:16px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--neon);font-weight:700;font-size:1.2rem;line-height:1}
+details[open] summary::after{content:"–"}
+details .ans{padding:0 22px 18px;font-size:.95rem}
+details .ans q{color:var(--text-bright);font-style:italic}
+/* Qualifier */
+.qual{padding:32px}
+.progress{height:6px;background:var(--ring-track);border-radius:999px;overflow:hidden;margin-bottom:26px}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--neon),var(--green));transition:width .35s}
+.qstep{font-size:.8rem;font-weight:600;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase}
+.qtext{font-size:1.4rem;margin:8px 0 20px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{
+  text-align:left;padding:16px 18px;border-radius:12px;border:1px solid var(--border);
+  background:transparent;color:var(--text-bright);font:inherit;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.opt:hover{border-color:var(--neon);background:rgba(0,170,255,.06)}
+.opt.sel{border-color:var(--green);background:rgba(0,255,136,.08)}
+.qnav{display:flex;justify-content:space-between;margin-top:22px}
+.link{background:none;border:none;color:var(--text-dim);font:inherit;cursor:pointer;text-decoration:underline}
+.link:hover{color:var(--neon)}
+.link[disabled]{visibility:hidden}
+.result{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:start}
+.result .price{font-size:1.05rem;font-weight:700;color:var(--green);margin:4px 0 14px}
+.result .why{font-size:.92rem;color:var(--text-dim);margin-bottom:12px}
+.result .copy{font-size:1.05rem;color:var(--text-bright);margin-bottom:16px}
+.result ul{list-style:none;margin-bottom:22px}
+.result li{padding-left:24px;position:relative;margin-bottom:6px;font-size:.95rem}
+.result li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700}
+.result .actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.note{font-size:.8rem;color:var(--text-dim);margin-top:14px}
+/* Footer */
+footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:36px 0 48px;font-size:.85rem;color:var(--text-dim)}
+footer p{margin-bottom:8px}
+footer .concept{color:var(--amber);font-weight:600}
+@media (max-width:760px){
+  .hero{grid-template-columns:1fr}
+  .hero-ring{order:-1}
+  .reasons,.week,.stats,.quotes{grid-template-columns:1fr}
+  .opts{grid-template-columns:1fr}
+  .result{grid-template-columns:1fr}
+  .nav a{display:none}
+  section{padding:56px 0}
+}
+@media (prefers-reduced-motion:reduce){
+  .orb{animation:none}
+  html{scroll-behavior:auto}
+  .jar .fill,.progress i{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="orb o1" aria-hidden="true"></div>
+<div class="orb o2" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="#hero"><span>🐷</span>Earn &amp; Learn</a>
+    <nav class="nav">
+      <a href="#week">How it works</a>
+      <a href="#faq">FAQ</a>
+      <a href="#fit">Find your fit</a>
+      <button class="toggle" id="themeToggle" aria-label="Toggle light and dark theme">☀️</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- 1. Hero -->
+  <section id="hero">
+    <div class="wrap hero">
+      <div>
+        <p class="eyebrow">Ages 6–17 · Card + app</p>
+        <h1>Pocket money they earn. Lessons they keep.</h1>
+        <p class="lead">A kids' card and app for ages 6–17, with chores, savings goals and parent controls. Free for every child on your account.</p>
+        <a class="btn" href="#fit">Find your family fit</a>
+        <p class="tagline">Earn it. Learn it. Grow up with it.</p>
+      </div>
+      <div class="hero-ring">
+        <div class="jar" id="heroJar" data-pct="40">
+          <svg width="200" height="200" viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="track" cx="100" cy="100" r="86" fill="none" stroke-width="14"/>
+            <circle class="fill" cx="100" cy="100" r="86" fill="none" stroke-width="14"/>
+          </svg>
+          <div class="val"><span class="amt">€8</span><span class="of">of €20</span></div>
+        </div>
+        <p class="jar-label">Savings jar: <b>New football</b></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Three reasons -->
+  <section id="reasons">
+    <div class="wrap">
+      <p class="eyebrow">Why families choose it</p>
+      <h2>Three reasons this is for you</h2>
+      <div class="reasons">
+        <div class="card">
+          <div class="num">01</div>
+          <h3>Earned, not handed out.</h3>
+          <p>Link pocket money to chores, the way 86% of Irish parents already think it should work.</p>
+        </div>
+        <div class="card">
+          <div class="num">02</div>
+          <h3>Every child, both parents, no paywall.</h3>
+          <p>Add each child and a co-parent without upgrading.</p>
+        </div>
+        <div class="card">
+          <div class="num">03</div>
+          <h3>A bank they grow into.</h3>
+          <p>Their account moves to a student account, then an adult one, without being closed and reopened.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Sample experience -->
+  <section id="week">
+    <div class="wrap">
+      <p class="eyebrow">Sample experience</p>
+      <h2>A week with Earn &amp; Learn</h2>
+      <div class="week">
+        <div class="card day">
+          <span class="d chore">Mon</span>
+          <p>You set <b>“Empty the dishwasher = €1”</b>.</p>
+        </div>
+        <div class="card day">
+          <span class="d chore">Wed</span>
+          <p>Your child ticks it off and you approve. <b>€1 lands</b> in their account.</p>
+        </div>
+        <div class="card day">
+          <span class="d money">Fri</span>
+          <p>They move €2 into the “New football” goal.</p>
+          <div class="mini">
+            <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+              <circle cx="20" cy="20" r="16" fill="none" stroke="var(--ring-track)" stroke-width="5"/>
+              <circle cx="20" cy="20" r="16" fill="none" stroke="var(--green)" stroke-width="5" stroke-linecap="round" stroke-dasharray="100.53" stroke-dashoffset="60.32"/>
+            </svg>
+            <span>Jar 40% full</span>
+          </div>
+        </div>
+        <div class="card day">
+          <span class="d learn">Sun</span>
+          <p>They unlock a 3-minute lesson, <b>“Wants vs needs”</b>, matched to their age.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Social proof -->
+  <section id="proof">
+    <div class="wrap">
+      <p class="eyebrow">What Irish parents told us</p>
+      <h2>You're already doing this. We just made it easier.</h2>
+      <div class="stats">
+        <div class="card stat">
+          <div class="n g">59%</div>
+          <p>of parents already use apps for pocket money.</p>
+        </div>
+        <div class="card stat">
+          <div class="n a">86%</div>
+          <p>say pocket money should be linked to chores.</p>
+        </div>
+      </div>
+      <div class="quotes">
+        <div class="card">
+          <blockquote>Their service for children doesnt seem to have changed much since I was a kid.</blockquote>
+          <cite>Parent on <a href="https://www.boards.ie/discussion/2058203062/childrens-bank-accounts" target="_blank" rel="noopener">Boards.ie</a></cite>
+        </div>
+        <div class="card">
+          <blockquote>...the monthly fee represents 20% of his monthly pocket money so it was a non starter!</blockquote>
+          <cite>Parent on <a href="https://www.mumsnet.com/talk/_chat/4452430-Go-Henry-card" target="_blank" rel="noopener">Mumsnet</a></cite>
+        </div>
+      </div>
+      <p class="src">Stats: TUICU parent survey, via <a href="https://www.breakingnews.ie/ireland/nearly-one-in-two-parents-give-their-children-pocket-money-tuicu-1688801.html" target="_blank" rel="noopener">BreakingNews.ie</a>, Oct 2024.</p>
+    </div>
+  </section>
+
+  <!-- 5. FAQ -->
+  <section id="faq">
+    <div class="wrap">
+      <p class="eyebrow">Questions parents ask</p>
+      <h2>FAQ</h2>
+      <details>
+        <summary>Is it really free?</summary>
+        <div class="ans">Yes, the core card and app are free for every child on your account. An optional Family Plus tier is €2.99/month per family, not per child.</div>
+      </details>
+      <details>
+        <summary>How is this different from Revolut &lt;18?</summary>
+        <div class="ans">Chores-linked allowances, age-matched money lessons, both parents free, and an Irish bank account that carries on past 18. No more turning 18 and finding, as one parent put it, an account <q>...he can't access.</q></div>
+      </details>
+      <details>
+        <summary>Who's in control?</summary>
+        <div class="ans">You are. You approve chores, set spending limits, freeze the card and get spending alerts.</div>
+      </details>
+      <details>
+        <summary>Is the “game” part safe?</summary>
+        <div class="ans">Rewards are real euro and real savings goals. There are no tokens, streak pressure or points to chase.</div>
+      </details>
+      <details>
+        <summary>Is this connected to Money Smarts in my child's school?</summary>
+        <div class="ans">No. Money Smarts stays a free, product-neutral school programme. We don't sell in classrooms.</div>
+      </details>
+    </div>
+  </section>
+
+  <!-- 6. Qualifier -->
+  <section id="fit">
+    <div class="wrap">
+      <p class="eyebrow">Is this for you?</p>
+      <h2>Find your family fit</h2>
+      <div class="card qual" id="qual" aria-live="polite"></div>
+    </div>
+  </section>
+</main>
+
+<!-- 7. Footer -->
+<footer>
+  <div class="wrap">
+    <p class="concept">Student concept, not a live product.</p>
+    <p>Concept for a Bank of Ireland youth product. Pricing proposed, not tested. Stats: TUICU parent survey via <a href="https://www.breakingnews.ie/ireland/nearly-one-in-two-parents-give-their-children-pocket-money-tuicu-1688801.html" target="_blank" rel="noopener">BreakingNews.ie</a>, Oct 2024.</p>
+  </div>
+</footer>
+
+<script>
+/* ---------- Theme toggle ---------- */
+(function(){
+  var btn=document.getElementById('themeToggle');
+  function sync(){btn.textContent=document.documentElement.classList.contains('light')?'🌙':'☀️';}
+  sync();
+  btn.addEventListener('click',function(){
+    var light=document.documentElement.classList.toggle('light');
+    try{localStorage.setItem('el-theme',light?'light':'dark');}catch(e){}
+    sync();
+  });
+})();
+
+/* ---------- Savings jar rings ---------- */
+function setJar(el,pct){
+  var c=el.querySelector('.fill');var r=c.r.baseVal.value;var len=2*Math.PI*r;
+  c.style.strokeDasharray=len;c.style.strokeDashoffset=len;
+  requestAnimationFrame(function(){requestAnimationFrame(function(){c.style.strokeDashoffset=len*(1-pct/100);});});
+}
+setJar(document.getElementById('heroJar'),40);
+
+/* ---------- Qualifier ---------- */
+var AGES=['6–8','9–11','12–14','15–17'];
+var QUESTIONS=[
+  {q:'How many children would use it?',opts:[
+    {l:'1',p:{F:1,E:1}},{l:'2',p:{P:2}},{l:'3+',p:{P:3}}]},
+  {q:'Age of your youngest?',opts:[
+    {l:'6–8',p:{F:2}},{l:'9–11',p:{F:1,E:1}},{l:'12–14',p:{E:2}},{l:'15–17',p:{E:3}}]},
+  {q:'Age of your oldest?',opts:[
+    {l:'6–8',p:{F:1}},{l:'9–11',p:{F:1}},{l:'12–14',p:{E:1}},{l:'15–17',p:{E:1}}]},
+  {q:'Who manages pocket money?',opts:[
+    {l:'Just me',p:{}},{l:'Me and a co-parent',p:{P:1}},{l:'Shared, plus grandparents top up',p:{P:2}}]},
+  {q:'What matters most right now?',opts:[
+    {l:'Teaching basics',p:{F:2}},{l:'Earning through chores',p:{E:1,F:1}},
+    {l:'Independence and their own card',p:{E:2}},{l:'Keeping siblings fair',p:{P:2}}]}
+];
+var TIERS={
+  F:{name:'First Steps',price:'Free · ages 6–11',pct:30,
+    copy:'Your child is at the right age to learn that money is earned, saved and spent, in that order.',
+    feats:['Parent-approved spending','One savings jar','Beginner lessons'],cta:'Start First Steps'},
+  E:{name:'Earn & Learn',price:'Free · ages 12–17',pct:60,
+    copy:'Your teen wants independence. Give them a card and a chore list, and let the account follow them to college.',
+    feats:['Own card with limits','Chores-linked allowance','A clear path to a student account'],cta:'Get their card'},
+  P:{name:'Family Plus',price:'€2.99/month per family · proposed price',pct:90,
+    copy:'Multiple kids, different ages, more than one adult. One dashboard keeps it fair.',
+    feats:['Side-by-side sibling view','Co-parent and family top-ups','Lessons at each child\'s level'],cta:'Try Family Plus'}
+};
+var answers=[],step=0,box=document.getElementById('qual');
+
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+function renderQ(){
+  var Q=QUESTIONS[step],pct=(step/QUESTIONS.length)*100;
+  var html='<div class="progress"><i style="width:'+pct+'%"></i></div>'+
+    '<div class="qstep">Question '+(step+1)+' of '+QUESTIONS.length+'</div>'+
+    '<h3 class="qtext">'+esc(Q.q)+'</h3><div class="opts">';
+  Q.opts.forEach(function(o,i){
+    html+='<button class="opt'+(answers[step]===i?' sel':'')+'" data-i="'+i+'">'+esc(o.l)+'</button>';
+  });
+  html+='</div><div class="qnav"><button class="link" id="back"'+(step===0?' disabled':'')+'>← Back</button><span></span></div>';
+  box.innerHTML=html;
+  box.querySelectorAll('.opt').forEach(function(b){
+    b.addEventListener('click',function(){
+      answers[step]=+b.dataset.i;
+      if(step<QUESTIONS.length-1){step++;renderQ();}else{renderResult();}
+    });
+  });
+  var back=document.getElementById('back');
+  if(back)back.addEventListener('click',function(){if(step>0){step--;renderQ();}});
+}
+
+function score(){
+  var s={F:0,E:0,P:0};
+  answers.forEach(function(a,qi){
+    var p=QUESTIONS[qi].opts[a].p;for(var k in p)s[k]+=p[k];
+  });
+  if(Math.abs(answers[2]-answers[1])>=2)s.P+=2; /* age gap of 2+ bands */
+  var order=['P','E','F'],best='P'; /* tie-break: P > E > F */
+  order.forEach(function(k){if(s[k]>s[best])best=k;});
+  return best;
+}
+
+function renderResult(){
+  var k=score(),t=TIERS[k];
+  var n=QUESTIONS[0].opts[answers[0]].l;
+  var y=AGES[answers[1]],o=AGES[answers[2]];
+  var ages=(answers[0]===0||y===o)?('aged '+y):('aged '+y+' to '+o);
+  var who=QUESTIONS[3].opts[answers[3]].l.toLowerCase();
+  var focus=QUESTIONS[4].opts[answers[4]].l.toLowerCase();
+  var why='You told us: '+n+(n==='1'?' child ':' children ')+ages+', managed by '+(who==='just me'?'you':who.replace(/^me/,'you'))+', and '+focus+' matters most.';
+  var html='<div class="progress"><i style="width:100%"></i></div>'+
+    '<div class="result">'+
+      '<div class="jar" id="resJar">'+
+        '<svg width="200" height="200" viewBox="0 0 200 200" aria-hidden="true">'+
+          '<circle class="track" cx="100" cy="100" r="86" fill="none" stroke-width="14"/>'+
+          '<circle class="fill" cx="100" cy="100" r="86" fill="none" stroke-width="14"/>'+
+        '</svg>'+
+        '<div class="val"><span class="amt">'+(k==='P'?'€2.99':'€0')+'</span><span class="of">'+(k==='P'?'per family / month':'per month')+'</span></div>'+
+      '</div>'+
+      '<div>'+
+        '<div class="qstep">Your family fit</div>'+
+        '<h3 class="qtext" style="margin-bottom:0">'+esc(t.name)+'</h3>'+
+        '<div class="price">'+esc(t.price)+'</div>'+
+        '<p class="why">'+esc(why)+'</p>'+
+        '<p class="copy">'+esc(t.copy)+'</p>'+
+        '<ul>'+t.feats.map(function(f){return '<li>'+esc(f)+'</li>';}).join('')+'</ul>'+
+        '<div class="actions"><a class="btn" href="#hero">'+esc(t.cta)+'</a>'+
+        '<button class="link" id="restart">Start again</button></div>'+
+        '<p class="note">Concept prototype. Pricing proposed, not tested.</p>'+
+      '</div>'+
+    '</div>';
+  box.innerHTML=html;
+  setJar(document.getElementById('resJar'),t.pct);
+  document.getElementById('restart').addEventListener('click',function(){answers=[];step=0;renderQ();});
+}
+
+renderQ();
+</script>
+</body>
+</html>
