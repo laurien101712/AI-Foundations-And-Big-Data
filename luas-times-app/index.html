@@ -34,6 +34,16 @@
   .err { color:var(--red); }
   #map { height:340px; border-radius:8px; border:1px solid var(--line); margin-bottom:12px; }
   .stop.hl { outline:3px solid var(--accent); }
+  .panel { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+  @media (max-width:600px) { .panel { grid-template-columns:1fr; } }
+  .sla, .ai { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; }
+  .sla { display:flex; gap:12px; align-items:center; }
+  .sla-num { font-size:2.2rem; font-weight:800; min-width:90px; }
+  .sla-label { font-weight:700; }
+  .ok { color:var(--green); } .warn { color:#d98b00; } .bad { color:var(--red); }
+  #aiBtn { padding:8px 12px; border:none; border-radius:6px; background:var(--accent); color:#fff; font-weight:600; cursor:pointer; margin-bottom:8px; }
+  #aiBtn:disabled { opacity:.6; cursor:wait; }
+  #aiOut { color:var(--text); font-size:.9rem; line-height:1.4; }
   .flag { display:inline-block; margin-left:6px; padding:1px 6px; border-radius:4px; background:#f5a623; color:#000; font-size:.7rem; text-transform:none; }
 </style>
 </head>
@@ -47,6 +57,19 @@
   </div>
   <input id="filter" placeholder="Filter stops…">
   <div id="msg"></div>
+  <div class="panel">
+    <div class="sla">
+      <div class="sla-num" id="slaNum">–</div>
+      <div>
+        <div class="sla-label">Service level</div>
+        <div class="meta" id="slaDetail">% of stop-directions with a tram within 15 min and no long gap · target 90%</div>
+      </div>
+    </div>
+    <div class="ai">
+      <button id="aiBtn">Summarise this line</button>
+      <div id="aiOut" class="meta">Ask the class AI for a plain-English status of the line.</div>
+    </div>
+  </div>
 </header>
 <main>
   <div id="map"></div>
@@ -99,7 +122,62 @@ function render() {
       </div>`).join("");
 
   drawMap();
+  drawSLA();
 }
+
+// ---- Service level (WFM-style SLA) ----
+// Each stop-direction with trams forecast counts once.
+// "Met" = next tram within 15 min and no long gap to the following one.
+const TARGET = 90;
+function drawSLA() {
+  let total = 0, met = 0;
+  const misses = [];
+  data.stops.forEach(s => s.directions.forEach(d => {
+    if (!d.trams.length) return;
+    total++;
+    if (longGap(d.trams)) misses.push(`${s.name} (${d.name})`); else met++;
+  }));
+  const el = document.getElementById("slaNum");
+  if (!total) { el.textContent = "–"; return; }
+  const pct = Math.round(met / total * 100);
+  el.textContent = pct + "%";
+  el.className = "sla-num " + (pct >= TARGET ? "ok" : pct >= TARGET - 15 ? "warn" : "bad");
+  document.getElementById("slaDetail").textContent =
+    `${met} of ${total} stop-directions within 15 min · target ${TARGET}%` +
+    (misses.length ? ` · gaps at: ${misses.slice(0, 4).join(", ")}${misses.length > 4 ? "…" : ""}` : "");
+}
+
+// ---- AI summary via the class relay's /chat ----
+// Only runs on button press, to go easy on the shared relay.
+async function summarise() {
+  if (!data) return;
+  const btn = document.getElementById("aiBtn"), out = document.getElementById("aiOut");
+  btn.disabled = true; out.textContent = "Thinking…";
+  const compact = data.stops.map(s =>
+    `${s.name}: ` + s.directions.map(d =>
+      `${d.name} ${d.trams.length ? d.trams.slice(0, 3).map(t => t.due).join("/") + " min" : "none"}${longGap(d.trams) ? " [LONG GAP]" : ""}`
+    ).join("; ")
+  ).join("\n");
+  const prompt =
+    `You are a Luas service controller. Here are live forecasts for the ${line} line ` +
+    `(minutes until the next trams at each stop, by direction). Service message: "${data.stops[0]?.message || ""}". ` +
+    `Service level right now: ${document.getElementById("slaNum").textContent}.\n\n${compact}\n\n` +
+    `In 2-3 short plain-English sentences for a passenger: say how the line is running overall, ` +
+    `name any stops with long gaps, and suggest anything useful. No bullet points.`;
+  try {
+    const res = await fetch(`${RELAY}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [{ role: "user", content: prompt }] })
+    });
+    const j = await res.json();
+    out.textContent = j.reply || "No reply from the class AI.";
+  } catch (e) {
+    out.textContent = "Couldn't reach the class AI. Try again in a moment.";
+  }
+  btn.disabled = false;
+}
+document.getElementById("aiBtn").onclick = summarise;
 
 // ---- Map ----
 const map = L.map("map").setView([53.34, -6.26], 12);
@@ -162,6 +240,7 @@ document.querySelectorAll(".tabs button").forEach(b => {
     document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
     data = null;
     document.getElementById("stops").innerHTML = "";
+    document.getElementById("aiOut").textContent = "Ask the class AI for a plain-English status of the line.";
     load();
   };
 });
