@@ -30,6 +30,7 @@
   .now { color:var(--accent); }
   .none { color:var(--muted); font-size:.85rem; }
   .err { color:var(--red); }
+  .flag { display:inline-block; margin-left:6px; padding:1px 6px; border-radius:4px; background:#f5a623; color:#000; font-size:.7rem; text-transform:none; }
 </style>
 </head>
 <body>
@@ -50,6 +51,15 @@ const RELAY = "https://luas-class.kluxy.app";
 let line = "green";
 let data = null;
 
+// Flag a direction if the next tram, or the gap to the one after, is 15+ min.
+// The feed has no timetable, so this stands in for "late".
+const GAP = 15;
+function longGap(trams) {
+  if (!trams.length) return false;
+  if (trams[0].due >= GAP) return true;
+  return trams.length > 1 && trams[1].due - trams[0].due >= GAP;
+}
+
 function render() {
   const box = document.getElementById("stops");
   if (!data) return;
@@ -69,7 +79,7 @@ function render() {
         <div class="dirs">
           ${s.directions.map(d => `
             <div class="dir">
-              <h3>${d.name}</h3>
+              <h3>${d.name}${longGap(d.trams) ? `<span class="flag">Long gap</span>` : ""}</h3>
               ${d.trams.length
                 ? d.trams.slice(0, 3).map(t => `
                     <div class="tram">
