@@ -62,12 +62,12 @@
       <div class="sla-num" id="slaNum">–</div>
       <div>
         <div class="sla-label">Service level</div>
-        <div class="meta" id="slaDetail">Trams within 15 min · target 90%</div>
+        <div class="meta" id="slaDetail">% of stop-directions with a tram within 15 min and no long gap · target 90%</div>
       </div>
     </div>
     <div class="ai">
-      <button id="aiBtn">Summarise</button>
-      <div id="aiOut" class="meta">Quick status of the line.</div>
+      <button id="aiBtn">Summarise this line</button>
+      <div id="aiOut" class="meta">Get a plain-English summary of how this line is performing right now.</div>
     </div>
   </div>
 </header>
@@ -143,7 +143,7 @@ function drawSLA() {
   el.textContent = pct + "%";
   el.className = "sla-num " + (pct >= TARGET ? "ok" : pct >= TARGET - 15 ? "warn" : "bad");
   document.getElementById("slaDetail").textContent =
-    `${met} of ${total} on time · target ${TARGET}%` +
+    `${met} of ${total} stop-directions within 15 min · target ${TARGET}%` +
     (misses.length ? ` · gaps at: ${misses.slice(0, 4).join(", ")}${misses.length > 4 ? "…" : ""}` : "");
 }
 
@@ -162,8 +162,8 @@ async function summarise() {
     `You are a Luas service controller. Here are live forecasts for the ${line} line ` +
     `(minutes until the next trams at each stop, by direction). Service message: "${data.stops[0]?.message || ""}". ` +
     `Service level right now: ${document.getElementById("slaNum").textContent}.\n\n${compact}\n\n` +
-    `In ONE or TWO short sentences, max 35 words, plain English: say how the line is running overall, ` +
-    `name any stops with long gaps. No bullet points, no filler.`;
+    `In 2-3 short plain-English sentences for a passenger: say how the line is running overall, ` +
+    `name any stops with long gaps, and suggest anything useful. No bullet points.`;
   try {
     const res = await fetch(`${RELAY}/chat`, {
       method: "POST",
@@ -240,7 +240,7 @@ document.querySelectorAll(".tabs button").forEach(b => {
     document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
     data = null;
     document.getElementById("stops").innerHTML = "";
-    document.getElementById("aiOut").textContent = "Quick status of the line.";
+    document.getElementById("aiOut").textContent = "Get a plain-English summary of how this line is performing right now.";
     load();
   };
 });
