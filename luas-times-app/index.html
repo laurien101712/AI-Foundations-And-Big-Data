@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Luas Live</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   :root { --red:#c8102e; --green:#00a651; --bg:#f6f6f4; --card:#fff; --text:#1d1d1d; --muted:#6b6b6b; --line:#e3e3e0; }
   @media (prefers-color-scheme: dark) {
@@ -30,6 +32,8 @@
   .now { color:var(--accent); }
   .none { color:var(--muted); font-size:.85rem; }
   .err { color:var(--red); }
+  #map { height:340px; border-radius:8px; border:1px solid var(--line); margin-bottom:12px; }
+  .stop.hl { outline:3px solid var(--accent); }
   .flag { display:inline-block; margin-left:6px; padding:1px 6px; border-radius:4px; background:#f5a623; color:#000; font-size:.7rem; text-transform:none; }
 </style>
 </head>
@@ -44,7 +48,10 @@
   <input id="filter" placeholder="Filter stops…">
   <div id="msg"></div>
 </header>
-<main id="stops"></main>
+<main>
+  <div id="map"></div>
+  <div id="stops"></div>
+</main>
 
 <script>
 const RELAY = "https://luas-class.kluxy.app";
@@ -74,7 +81,7 @@ function render() {
   box.innerHTML = data.stops
     .filter(s => s.name.toLowerCase().includes(q))
     .map(s => `
-      <div class="stop">
+      <div class="stop" id="stop-${s.id}">
         <h2>${s.name}</h2>
         <div class="dirs">
           ${s.directions.map(d => `
@@ -90,6 +97,51 @@ function render() {
             </div>`).join("")}
         </div>
       </div>`).join("");
+
+  drawMap();
+}
+
+// ---- Map ----
+const map = L.map("map").setView([53.34, -6.26], 12);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 18, attribution: "© OpenStreetMap contributors"
+}).addTo(map);
+const markers = L.layerGroup().addTo(map);
+let fitFor = null; // which line the map was last zoomed to
+
+function nextText(s) {
+  return s.directions.map(d =>
+    `<b>${d.name}:</b> ` + (d.trams.length
+      ? d.trams.slice(0, 2).map(t => `${t.destination} ${t.due <= 0 ? "Due" : t.due + " min"}`).join(", ")
+      : "none")
+  ).join("<br>");
+}
+
+function drawMap() {
+  markers.clearLayers();
+  const colour = line === "red" ? "#c8102e" : "#00a651";
+  const pts = [];
+  data.stops.forEach(s => {
+    const gap = s.directions.some(d => longGap(d.trams));
+    pts.push([s.lat, s.lng]);
+    L.circleMarker([s.lat, s.lng], {
+      radius: gap ? 9 : 7,
+      color: gap ? "#f5a623" : colour,
+      fillColor: gap ? "#f5a623" : colour,
+      fillOpacity: 0.9, weight: 2
+    })
+    .bindPopup(`<b>${s.name}</b>${gap ? " ⚠ Long gap" : ""}<br>${nextText(s)}`)
+    .on("click", () => {
+      const el = document.getElementById("stop-" + s.id);
+      if (!el) return;
+      document.querySelectorAll(".stop.hl").forEach(x => x.classList.remove("hl"));
+      el.classList.add("hl");
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    })
+    .addTo(markers);
+  });
+  // Only zoom to the line when it changes, so refreshes don't jump the view
+  if (fitFor !== line && pts.length) { map.fitBounds(pts, { padding: [20, 20] }); fitFor = line; }
 }
 
 async function load() {
