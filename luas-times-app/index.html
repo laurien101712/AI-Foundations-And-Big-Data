@@ -1,1 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Luas Live</title>
+<style>
+  :root { --red:#c8102e; --green:#00a651; --bg:#f6f6f4; --card:#fff; --text:#1d1d1d; --muted:#6b6b6b; --line:#e3e3e0; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141414; --card:#1f1f1f; --text:#eee; --muted:#9a9a9a; --line:#333; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:16px; max-width:900px; margin:auto; }
+  h1 { margin:0 0 4px; font-size:1.5rem; }
+  .meta { color:var(--muted); font-size:.85rem; }
+  .tabs { display:flex; gap:8px; margin:12px 0; }
+  .tabs button { flex:1; padding:10px; border:2px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); font-weight:600; cursor:pointer; }
+  .tabs button.on[data-line=red] { border-color:var(--red); background:var(--red); color:#fff; }
+  .tabs button.on[data-line=green] { border-color:var(--green); background:var(--green); color:#fff; }
+  input { width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); font-size:1rem; }
+  #msg { margin-top:10px; font-size:.9rem; }
+  main { max-width:900px; margin:auto; padding:0 16px 32px; }
+  .stop { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--accent); border-radius:8px; padding:12px; margin-bottom:10px; }
+  .stop h2 { margin:0 0 8px; font-size:1.05rem; }
+  .dirs { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .dir h3 { margin:0 0 4px; font-size:.8rem; text-transform:uppercase; color:var(--muted); }
+  .tram { display:flex; justify-content:space-between; font-size:.9rem; padding:2px 0; }
+  .due { font-weight:700; }
+  .now { color:var(--accent); }
+  .none { color:var(--muted); font-size:.85rem; }
+  .err { color:var(--red); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Luas Live</h1>
+  <div class="meta" id="updated">Loading…</div>
+  <div class="tabs">
+    <button data-line="red">Red Line</button>
+    <button data-line="green">Green Line</button>
+  </div>
+  <input id="filter" placeholder="Filter stops…">
+  <div id="msg"></div>
+</header>
+<main id="stops"></main>
 
+<script>
+const RELAY = "https://luas-class.kluxy.app";
+let line = "green";
+let data = null;
+
+function render() {
+  const box = document.getElementById("stops");
+  if (!data) return;
+  const q = document.getElementById("filter").value.toLowerCase();
+  const accent = line === "red" ? "var(--red)" : "var(--green)";
+  document.documentElement.style.setProperty("--accent", accent);
+
+  // Show the service message once (first stop's message)
+  const m = data.stops[0]?.message || "";
+  document.getElementById("msg").textContent = m;
+
+  box.innerHTML = data.stops
+    .filter(s => s.name.toLowerCase().includes(q))
+    .map(s => `
+      <div class="stop">
+        <h2>${s.name}</h2>
+        <div class="dirs">
+          ${s.directions.map(d => `
+            <div class="dir">
+              <h3>${d.name}</h3>
+              ${d.trams.length
+                ? d.trams.slice(0, 3).map(t => `
+                    <div class="tram">
+                      <span>${t.destination}</span>
+                      <span class="due ${t.due <= 1 ? "now" : ""}">${t.due <= 0 ? "Due" : t.due + " min"}</span>
+                    </div>`).join("")
+                : `<div class="none">No trams forecast</div>`}
+            </div>`).join("")}
+        </div>
+      </div>`).join("");
+}
+
+async function load() {
+  try {
+    const res = await fetch(`${RELAY}/network?line=${line}`);
+    data = await res.json();
+    const t = new Date(data.fetched).toLocaleTimeString("en-IE");
+    document.getElementById("updated").textContent = `Updated ${t} · refreshes every 30s`;
+    render();
+  } catch (e) {
+    document.getElementById("updated").innerHTML = `<span class="err">Couldn't reach the relay. Retrying…</span>`;
+  }
+}
+
+document.querySelectorAll(".tabs button").forEach(b => {
+  b.onclick = () => {
+    line = b.dataset.line;
+    document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
+    data = null;
+    document.getElementById("stops").innerHTML = "";
+    load();
+  };
+});
+document.getElementById("filter").oninput = render;
+document.querySelector(`[data-line=${line}]`).classList.add("on");
+
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>
