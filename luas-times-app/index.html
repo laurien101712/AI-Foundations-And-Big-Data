@@ -1,66 +1,3 @@
-Claude
-/
-In the Console tab, errors show as red lines, usually with a red ✕ or a red count badge at the top of the panel (e.g. “1” in a red circle). If there’s nothing red, there’s no error, which is useful to know.
-
-Also reload the page with the Console open (Ctrl+R, or Cmd+R on Mac), since errors only appear if they happen while it’s open.
-
-And what does the Service level box show: a “–”, or no box at all?
-
-Pasted text.txt
-Pasted text.txt
-TXT
-the very first line of that has some red
-
-Checking why the page shows the older version
-Found it. That red on line 1 isn’t an error; it’s just the page setting its colour to Red Line.
-
-The real issue: what you pasted is the previous version (map, but no Service level box or AI button). So the live page hasn’t picked up the latest file. That also makes me wonder where you saw the AI summary working. Possibly a different tab or copy?
-
-Fix:
-
-Re-upload the latest index.html (the one from my last message) into the luas-times-app folder → Commit.
-Wait a minute, then hard-refresh: Ctrl+Shift+R (Cmd+Shift+R on Mac), which skips the browser’s cached copy.
-You should then see the Service level box and the “Summarise this line” button under the stop filter.
-
-Okay, it just hadn't published yet. Sorry about that. My bad.
-
-No problem, GitHub Pages often lags a minute or two. Is the Service level box showing now?
-
-It is indeed, and it says 100%, which seems pretty good. I guess for this hour of the day, it's believable.
-
-Checking how the metric handles directions without trams.
-Checking how the metric handles directions without trams.
-Believable, but worth knowing why it’s easy to hit:
-
-15 minutes is generous. Luas typically runs every few minutes at peak and roughly every 10–15 in the evening, so most stops pass comfortably.
-It only checks the next two trams. E.g. Cookstown earlier had a 14 → 28 min gap on its third tram, which wasn’t counted.
-Empty directions are skipped (like termini), so they can’t drag the score down.
-If you want it to bite, the WFM-style fix is a time-of-day threshold, e.g. 8 min at peak, 15 off-peak. Want that, or happy to call it done?
-
-I mean, I'm thinking yes. Actually, no. I think we're okay for the moment. I think we're meant to be done by now anyway, so I'm pretty happy with what we have.
-
-Good call. You’ve got live times for both lines, a map, long-gap flags, an SLA score and an AI summary, which is plenty for a 20-minute exercise.
-
-One reminder: the class relay shuts off 19 November, so screenshot or record the page before then if you want to show it later.
-
-Actually, hold on. The AI summary actually says ask the class for a summary of this line. Can we change that language to just say something like provide a summary of the line's performance today?
-
-Shared a file, ran a command
-Updated index.html now reads: “Get a plain-English summary of how this line is performing right now.”
-
-I used “right now” rather than “today” because the feed is a live snapshot, so the AI only sees the current moment, not the day’s history. Upload it the same way and give it a minute to publish.
-
-Index
-Code
-·HTML
-How is Claude doing this session?
-
-
-
-Claude is AI and can make mistakes.
-
-
-Index · HTML
 <!doctype html>
 <html lang="en">
 <head>
@@ -125,12 +62,12 @@ Index · HTML
       <div class="sla-num" id="slaNum">–</div>
       <div>
         <div class="sla-label">Service level</div>
-        <div class="meta" id="slaDetail">% of stop-directions with a tram within 15 min and no long gap · target 90%</div>
+        <div class="meta" id="slaDetail">Trams within 15 min · target 90%</div>
       </div>
     </div>
     <div class="ai">
-      <button id="aiBtn">Summarise this line</button>
-      <div id="aiOut" class="meta">Get a plain-English summary of how this line is performing right now.</div>
+      <button id="aiBtn">Summarise</button>
+      <div id="aiOut" class="meta">Quick status of the line.</div>
     </div>
   </div>
 </header>
@@ -138,12 +75,12 @@ Index · HTML
   <div id="map"></div>
   <div id="stops"></div>
 </main>
- 
+
 <script>
 const RELAY = "https://luas-class.kluxy.app";
 let line = "green";
 let data = null;
- 
+
 // Flag a direction if the next tram, or the gap to the one after, is 15+ min.
 // The feed has no timetable, so this stands in for "late".
 const GAP = 15;
@@ -152,18 +89,18 @@ function longGap(trams) {
   if (trams[0].due >= GAP) return true;
   return trams.length > 1 && trams[1].due - trams[0].due >= GAP;
 }
- 
+
 function render() {
   const box = document.getElementById("stops");
   if (!data) return;
   const q = document.getElementById("filter").value.toLowerCase();
   const accent = line === "red" ? "var(--red)" : "var(--green)";
   document.documentElement.style.setProperty("--accent", accent);
- 
+
   // Show the service message once (first stop's message)
   const m = data.stops[0]?.message || "";
   document.getElementById("msg").textContent = m;
- 
+
   box.innerHTML = data.stops
     .filter(s => s.name.toLowerCase().includes(q))
     .map(s => `
@@ -183,11 +120,11 @@ function render() {
             </div>`).join("")}
         </div>
       </div>`).join("");
- 
+
   drawMap();
   drawSLA();
 }
- 
+
 // ---- Service level (WFM-style SLA) ----
 // Each stop-direction with trams forecast counts once.
 // "Met" = next tram within 15 min and no long gap to the following one.
@@ -206,10 +143,10 @@ function drawSLA() {
   el.textContent = pct + "%";
   el.className = "sla-num " + (pct >= TARGET ? "ok" : pct >= TARGET - 15 ? "warn" : "bad");
   document.getElementById("slaDetail").textContent =
-    `${met} of ${total} stop-directions within 15 min · target ${TARGET}%` +
+    `${met} of ${total} on time · target ${TARGET}%` +
     (misses.length ? ` · gaps at: ${misses.slice(0, 4).join(", ")}${misses.length > 4 ? "…" : ""}` : "");
 }
- 
+
 // ---- AI summary via the class relay's /chat ----
 // Only runs on button press, to go easy on the shared relay.
 async function summarise() {
@@ -225,8 +162,8 @@ async function summarise() {
     `You are a Luas service controller. Here are live forecasts for the ${line} line ` +
     `(minutes until the next trams at each stop, by direction). Service message: "${data.stops[0]?.message || ""}". ` +
     `Service level right now: ${document.getElementById("slaNum").textContent}.\n\n${compact}\n\n` +
-    `In 2-3 short plain-English sentences for a passenger: say how the line is running overall, ` +
-    `name any stops with long gaps, and suggest anything useful. No bullet points.`;
+    `In ONE or TWO short sentences, max 35 words, plain English: say how the line is running overall, ` +
+    `name any stops with long gaps. No bullet points, no filler.`;
   try {
     const res = await fetch(`${RELAY}/chat`, {
       method: "POST",
@@ -241,7 +178,7 @@ async function summarise() {
   btn.disabled = false;
 }
 document.getElementById("aiBtn").onclick = summarise;
- 
+
 // ---- Map ----
 const map = L.map("map").setView([53.34, -6.26], 12);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -249,7 +186,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 const markers = L.layerGroup().addTo(map);
 let fitFor = null; // which line the map was last zoomed to
- 
+
 function nextText(s) {
   return s.directions.map(d =>
     `<b>${d.name}:</b> ` + (d.trams.length
@@ -257,7 +194,7 @@ function nextText(s) {
       : "none")
   ).join("<br>");
 }
- 
+
 function drawMap() {
   markers.clearLayers();
   const colour = line === "red" ? "#c8102e" : "#00a651";
@@ -284,7 +221,7 @@ function drawMap() {
   // Only zoom to the line when it changes, so refreshes don't jump the view
   if (fitFor !== line && pts.length) { map.fitBounds(pts, { padding: [20, 20] }); fitFor = line; }
 }
- 
+
 async function load() {
   try {
     const res = await fetch(`${RELAY}/network?line=${line}`);
@@ -296,24 +233,22 @@ async function load() {
     document.getElementById("updated").innerHTML = `<span class="err">Couldn't reach the relay. Retrying…</span>`;
   }
 }
- 
+
 document.querySelectorAll(".tabs button").forEach(b => {
   b.onclick = () => {
     line = b.dataset.line;
     document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
     data = null;
     document.getElementById("stops").innerHTML = "";
-    document.getElementById("aiOut").textContent = "Get a plain-English summary of how this line is performing right now.";
+    document.getElementById("aiOut").textContent = "Quick status of the line.";
     load();
   };
 });
 document.getElementById("filter").oninput = render;
 document.querySelector(`[data-line=${line}]`).classList.add("on");
- 
+
 load();
 setInterval(load, 30000);
 </script>
 </body>
 </html>
- 
-Claude finished the response
